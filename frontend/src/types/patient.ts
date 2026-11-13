@@ -53,6 +53,8 @@ export interface UploadedDocument {
   status: 'Uploaded' | 'Processing' | 'Completed' | 'Failed';
   facility: string;
   pageCount?: number;
+  /** Where the original file is served to this viewer (patient or doctor route) */
+  fileUrl?: string;
 }
 
 export interface PersonalHealthInfo {

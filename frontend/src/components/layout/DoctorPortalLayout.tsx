@@ -9,6 +9,9 @@ import { DocumentViewerModal } from '../patient/DocumentViewerModal';
 import { DoctorStatusNotice } from '../../pages/doctor/DoctorLogin';
 import { clearDoctorSession, getDoctorProfile, getDoctorToken, saveDoctorSession, type DoctorProfile } from '../../auth/doctorSession';
 import { DOCTOR_SIGNED_OUT_EVENT, getDoctorMe } from '../../api/doctorApi.js';
+import { useDoctorRecords } from '../../pages/doctor/useDoctorRecords';
+import { DOCUMENT_TYPE_LABELS, formatRecordDate } from '../../records/format';
+import type { SourceDocument } from '../../types/records';
 
 export interface DoctorPortalLayoutProps {
   currentPatient: PatientContext | null;
@@ -22,6 +25,41 @@ export interface DoctorPortalLayoutProps {
 }
 
 const RECORD_NAV_IDS = new Set<string>(RECORD_SECTIONS.map((section) => section.navId));
+
+const STATUS: Record<SourceDocument['status'], UploadedDocument['status']> = {
+  uploaded: 'Uploaded',
+  processing: 'Processing',
+  ready: 'Completed',
+  failed: 'Failed',
+};
+
+/** A patient's uploaded document, as the Documents list shows it; the file is served under the doctor's consent. */
+const toDoctorDocument = (doc: SourceDocument, publicId: string): UploadedDocument => ({
+  id: doc.id,
+  name: doc.name,
+  type: DOCUMENT_TYPE_LABELS[doc.documentType] ?? 'Document',
+  fileFormat: (doc.name.split('.').pop() ?? '').toUpperCase(),
+  size: '',
+  uploadDate: '',
+  relevantDate: doc.documentDate ? formatRecordDate(doc.documentDate) : '',
+  status: STATUS[doc.status] ?? 'Uploaded',
+  facility: '',
+  pageCount: doc.pageCount || undefined,
+  fileUrl: `/api/doctor/patients/${encodeURIComponent(publicId)}/documents/${encodeURIComponent(doc.id)}/file`,
+});
+
+/** Documents tab: the patient's uploads, loaded with the doctor's consent (same records call as the other tabs). */
+const DoctorDocumentsTab: React.FC<{ publicId: string; onAccessLost: () => void; onOpenDocument: (doc: UploadedDocument) => void }> = ({
+  publicId,
+  onAccessLost,
+  onOpenDocument,
+}) => {
+  const { state } = useDoctorRecords(publicId, onAccessLost);
+  if (state.status === 'loading') return <p className="py-10 text-center text-sm text-text-secondary">Loading the patient’s documents…</p>;
+  if (state.status === 'error') return <p role="alert" className="py-10 text-center text-sm text-warning">{state.message}</p>;
+  const documents = state.records.documents.filter((doc) => doc.kind !== 'clinical_record').map((doc) => toDoctorDocument(doc, publicId));
+  return <DoctorDocuments documents={documents} onOpenDocument={onOpenDocument} />;
+};
 
 /** The limited identification from an approved request, as the app's PatientContext. */
 const toPatientContext = (request: ApprovedAccessRequest): PatientContext => ({
@@ -127,7 +165,7 @@ export const DoctorPortalLayout: React.FC<DoctorPortalLayoutProps> = ({
   if (activeNavItemId === 'documents') {
     return (
       <>
-        <DoctorDocuments documents={[]} onOpenDocument={setSelectedDocument} />
+        <DoctorDocumentsTab publicId={currentPatient.id} onAccessLost={onExitPatient} onOpenDocument={setSelectedDocument} />
         <DocumentViewerModal document={selectedDocument} onClose={() => setSelectedDocument(null)} />
       </>
     );

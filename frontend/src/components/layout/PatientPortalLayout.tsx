@@ -13,7 +13,6 @@ import { UploadDocuments } from '../../pages/patient/UploadDocuments';
 import { MedicalHistoryTimeline } from '../../pages/patient/MedicalHistoryTimeline';
 import { DocumentsLibrary } from '../../pages/patient/DocumentsLibrary';
 import { HealthAssistantChat } from '../../pages/patient/HealthAssistantChat';
-import { HealthAssistantWidget } from '../patient/HealthAssistantWidget';
 
 import { TimelineDetailDrawer } from '../patient/TimelineDetailDrawer';
 import { DocumentViewerModal } from '../patient/DocumentViewerModal';
@@ -50,6 +49,8 @@ const toUploadedDocument = (doc: ProcessedDocument): UploadedDocument => ({
   status: STATUS[doc.status],
   facility: doc.findingsCount ? `${doc.findingsCount} verified finding${doc.findingsCount === 1 ? '' : 's'}` : '',
   pageCount: doc.pageCount ?? undefined,
+  // The original, served to the logged-in patient only.
+  fileUrl: `/api/documents/${encodeURIComponent(doc.id)}/file`,
 });
 
 export interface PatientPortalLayoutProps {
@@ -221,8 +222,6 @@ export const PatientPortalLayout: React.FC<PatientPortalLayoutProps> = ({
 
       <LazySourceViewer target={sourceTarget} onClose={() => setSourceTarget(null)} />
 
-      {/* The full assistant page replaces the small help widget. */}
-      {activeItemId !== 'health-assistant' && <HealthAssistantWidget />}
     </>
   );
 };

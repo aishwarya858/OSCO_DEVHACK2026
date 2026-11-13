@@ -13,6 +13,7 @@ import documentRoutes from './routes/documents.routes.js';
 import patientRoutes from './routes/patient.routes.js';
 import recordsRoutes from './routes/records.routes.js';
 import chatRoutes from './routes/chat.routes.js';
+import adminRoutes, { adminAuthRouter } from './routes/admin.routes.js';
 
 export const createApp = () => {
 	const app = express();
@@ -23,12 +24,14 @@ export const createApp = () => {
 	app.use(express.json({ limit: '1mb' }));
 	app.use('/api/auth/patient', authRoutes);
 	app.use('/api/auth/doctor', doctorAuthRoutes);
+	app.use('/api/auth/admin', adminAuthRouter);
 	app.use('/api/patients', patientRoutes);
 	app.use('/api/access', accessRoutes);
 	app.use('/api/documents', documentRoutes);
 	app.use('/api/me', recordsRoutes);
 	app.use('/api/me', chatRoutes);
 	app.use('/api/doctor', doctorRoutes);
+	app.use('/api/admin', adminRoutes);
 
 	app.get('/health', (_req, res) => {
 		res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });

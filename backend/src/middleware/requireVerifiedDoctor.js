@@ -26,7 +26,7 @@ export const requireVerifiedDoctor = async (req, res, next) => {
 	let doctor;
 	try {
 		const result = await pool.query(
-			'SELECT id, full_name, verification_status FROM doctors WHERE id = $1',
+			'SELECT id, full_name, verification_status, review_note FROM doctors WHERE id = $1',
 			[doctorId],
 		);
 		doctor = result.rows[0];
@@ -53,7 +53,9 @@ export const requireVerifiedDoctor = async (req, res, next) => {
 			error: {
 				code: 'DOCTOR_NOT_VERIFIED',
 				status: doctor.verification_status,
-				message: STATUS_MESSAGES[doctor.verification_status] ?? 'Your account is not verified.',
+				message: [STATUS_MESSAGES[doctor.verification_status] ?? 'Your account is not verified.', doctor.review_note ? `Reason: ${doctor.review_note}` : null]
+					.filter(Boolean)
+					.join(' '),
 			},
 		});
 	}

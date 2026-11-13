@@ -50,4 +50,15 @@ export const requireDoctorAuth = (req, res, next) => {
 	return next();
 };
 
+/**
+ * Authenticates a hospital admin token. Admin routes also confirm the account still
+ * exists (requireAdmin in admin.routes.js), so a deleted admin loses access at once.
+ */
+export const requireAdminAuth = (req, res, next) => {
+	const adminId = verifyBearer(req, 'admin');
+	if (!adminId) return unauthorized(res, 'admin');
+	req.auth = { adminId };
+	return next();
+};
+
 export const isUuid = (value) => typeof value === 'string' && UUID.test(value);

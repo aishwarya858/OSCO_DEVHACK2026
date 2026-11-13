@@ -9,6 +9,7 @@
     "db:migrate": "node src/db/migrate.js",
     "doctor:create": "node scripts/create-doctor.js",
     "doctor:verify": "node scripts/verify-doctor.js",
+    "admin:create": "node scripts/create-admin.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {

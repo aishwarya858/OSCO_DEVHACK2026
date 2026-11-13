@@ -46,7 +46,10 @@ const sessionBody = (doctor) => ({
 			name: doctor.full_name,
 			email: doctor.email,
 			verificationStatus: doctor.verification_status,
-			statusMessage: STATUS_MESSAGES[doctor.verification_status] ?? null,
+			// A rejected or revoked doctor also sees the admin's reason.
+			statusMessage: [STATUS_MESSAGES[doctor.verification_status], doctor.review_note && doctor.verification_status !== 'verified' ? `Reason: ${doctor.review_note}` : null]
+				.filter(Boolean)
+				.join(' ') || null,
 		},
 	},
 });
@@ -107,7 +110,7 @@ router.post('/login', async (req, res, next) => {
 	}
 	try {
 		const { rows } = await pool.query(
-			'SELECT id, full_name, email, password_hash, verification_status FROM doctors WHERE lower(email) = $1 LIMIT 1',
+			'SELECT id, full_name, email, password_hash, verification_status, review_note FROM doctors WHERE lower(email) = $1 LIMIT 1',
 			[email.trim().toLowerCase()],
 		);
 		const doctor = rows[0];

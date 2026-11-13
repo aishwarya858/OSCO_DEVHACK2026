@@ -5,7 +5,6 @@ import { Topbar } from '../navigation/Topbar';
 
 export interface AppLayoutProps {
   portal: PortalType;
-  onPortalChange: (portal: PortalType) => void;
   activeItemId: string;
   onNavigate: (itemId: string) => void;
   activeSectionTitle: string;
@@ -16,7 +15,6 @@ export interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
   portal,
-  onPortalChange,
   activeItemId,
   onNavigate,
   activeSectionTitle,
@@ -32,7 +30,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* Sidebar */}
       <Sidebar
         portal={portal}
-        onPortalChange={onPortalChange}
         activeItemId={activeItemId}
         onNavigate={(id) => {
           onNavigate(id);

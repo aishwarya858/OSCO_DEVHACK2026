@@ -13,17 +13,16 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Stethoscope,
   UploadCloud,
   User,
   X,
 } from 'lucide-react';
 import type { PortalType, PatientContext } from '../../types/navigation';
 import { DOCTOR_NAV_ITEMS, PATIENT_NAV_ITEMS } from '../../types/navigation';
-import { PortalSwitcher } from './PortalSwitcher';
 
 export interface SidebarProps {
   portal: PortalType;
-  onPortalChange: (portal: PortalType) => void;
   activeItemId: string;
   onNavigate: (itemId: string) => void;
   isCollapsed: boolean;
@@ -51,7 +50,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: 
 
 export const Sidebar: React.FC<SidebarProps> = ({
   portal,
-  onPortalChange,
   activeItemId,
   onNavigate,
   isCollapsed,
@@ -116,28 +114,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
+        {/* Which portal this is. Patients and doctors sign in separately, so there is no switch. */}
         <div className="border-b border-[#244f4d] px-4 py-3">
           {!isCollapsed ? (
-            <PortalSwitcher
-              currentPortal={portal}
-              onPortalChange={(nextPortal) => {
-                onPortalChange(nextPortal);
-                onMobileClose?.();
-              }}
-              patientSelected={Boolean(currentPatient)}
-            />
+            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#122F2E] px-3 py-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded bg-white text-forest">
+                {portal === 'patient' ? <User size={13} /> : <Stethoscope size={13} />}
+              </span>
+              <span className="text-xs font-semibold text-white">{portal === 'patient' ? 'Patient' : 'Doctor'}</span>
+              <span className="ml-auto font-mono text-[9px] uppercase tracking-widest text-citron">Portal</span>
+            </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                onPortalChange(portal === 'patient' ? 'doctor' : 'patient');
-                onMobileClose?.();
-              }}
-              className="w-full py-1 text-center font-mono text-[10px] uppercase text-citron hover:underline"
-              title={`Switch to ${portal === 'patient' ? 'Doctor' : 'Patient'} Portal`}
+            <div
+              className="flex justify-center py-1 text-citron"
+              title={portal === 'patient' ? 'Patient portal' : 'Doctor portal'}
+              aria-label={portal === 'patient' ? 'Patient portal' : 'Doctor portal'}
             >
-              {portal === 'patient' ? 'PT' : 'DR'}
-            </button>
+              {portal === 'patient' ? <User size={16} /> : <Stethoscope size={16} />}
+            </div>
           )}
         </div>
 

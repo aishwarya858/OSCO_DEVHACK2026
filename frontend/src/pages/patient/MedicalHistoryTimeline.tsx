@@ -58,16 +58,19 @@ const FindingRow: React.FC<{ finding: Finding; entryDate: string | null; onOpenS
   const action = finding.category === 'medication' ? medicationActionLabel(finding.action) : null;
   const detail = findingDetail(finding);
   const ownDate = finding.eventDate && finding.eventDate !== entryDate ? formatRecordDate(finding.eventDate) : null;
+  // Only labels that say something beyond the default are shown (no "AI-extracted" tag).
+  const provenance = provenanceLabel(finding);
+  const source = provenance === 'AI-extracted' ? null : provenance;
   return (
     <li>
       <button
         type="button"
         onClick={() => onOpenSource(finding.id)}
-        className="group flex w-full flex-col gap-1 rounded-lg px-2 py-2 text-left hover:bg-eucalyptus-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-forest sm:flex-row sm:items-baseline sm:justify-between"
+        className="group flex w-full flex-col gap-1.5 rounded-lg px-3 py-3 text-left hover:bg-eucalyptus-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-forest sm:flex-row sm:items-start sm:gap-4"
       >
-        <span className="min-w-0">
+        <span className="shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-wide text-text-muted sm:w-24">{CATEGORY_LABELS[finding.category]}</span>
+        <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">{CATEGORY_LABELS[finding.category]}</span>
             <span className="text-sm font-medium text-text-main group-hover:text-forest">
               {action ? `${action}: ` : ''}
               {finding.name}
@@ -77,20 +80,20 @@ const FindingRow: React.FC<{ finding: Finding; entryDate: string | null; onOpenS
             )}
           </span>
           {(detail || ownDate) && (
-            <span className="mt-0.5 block text-xs text-text-secondary">
+            <span className="mt-1 block text-xs leading-5 text-text-secondary">
               {detail}
               {detail && ownDate ? ' · ' : ''}
               {ownDate ? `dated ${ownDate}` : ''}
             </span>
           )}
         </span>
-        <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[10px] text-forest">
+        <span className="inline-flex shrink-0 items-center gap-1.5 pt-0.5 font-mono text-[10px] text-forest">
           {finding.page != null && (
             <>
-              <FileText size={11} /> p.{finding.page} ·{' '}
+              <FileText size={11} /> p.{finding.page}
             </>
           )}
-          {provenanceLabel(finding)}
+          {source && <span className="rounded bg-eucalyptus-subtle px-1.5 py-0.5 font-body font-medium">{source}</span>}
         </span>
       </button>
     </li>
@@ -98,23 +101,23 @@ const FindingRow: React.FC<{ finding: Finding; entryDate: string | null; onOpenS
 };
 
 const EntryCard: React.FC<{ entry: TimelineEntry; onOpenSource: (id: string) => void }> = ({ entry, onOpenSource }) => (
-  <article className="rounded-xl border border-border-subtle bg-white p-4">
-    <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2 border-b border-border-subtle pb-2">
+  <article className="rounded-xl border border-border-subtle bg-white px-5 py-4 shadow-xs">
+    <header className="mb-1 flex flex-wrap items-start justify-between gap-2 border-b border-border-subtle pb-3">
       <div className="min-w-0">
-        <h3 className="font-heading text-sm font-semibold text-text-main">{entry.document.name}</h3>
-        <p className="text-xs text-text-secondary">
+        <h3 className="font-heading text-[15px] font-semibold text-text-main">{entry.document.name}</h3>
+        <p className="mt-0.5 text-xs text-text-secondary">
           {entry.date ? `Documented on ${formatRecordDate(entry.date)}` : 'Date not established'} ·{' '}
           {DOCUMENT_TYPE_LABELS[entry.document.documentType]}
         </p>
       </div>
-      <span className="font-mono text-[10px] text-text-muted">{entry.findings.length} verified finding{entry.findings.length === 1 ? '' : 's'}</span>
+      <span className="rounded-full bg-osco-bg px-2 py-0.5 font-mono text-[10px] text-text-muted">{entry.findings.length} verified finding{entry.findings.length === 1 ? '' : 's'}</span>
     </header>
     {entry.reviewReason && (
-      <p className="mb-2 flex items-start gap-1.5 text-xs text-warning">
+      <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-warning-subtle px-3 py-2 text-xs text-warning">
         <AlertTriangle size={13} className="mt-0.5 shrink-0" /> {entry.reviewReason} It is not placed on the timeline until this is resolved.
       </p>
     )}
-    <ul className="-mx-2">
+    <ul className="-mx-3 divide-y divide-border-subtle">
       {entry.findings.map((finding) => (
         <FindingRow key={finding.id} finding={finding} entryDate={entry.date} onOpenSource={onOpenSource} />
       ))}
@@ -146,12 +149,12 @@ const MedicationCard: React.FC<{ history: MedicationHistory; records: PatientRec
   const { status } = history;
 
   return (
-    <article className="rounded-xl border border-border-subtle bg-white p-4">
-      <h3 className="font-heading text-sm font-semibold text-text-main">
+    <article className="rounded-xl border border-border-subtle bg-white px-5 py-4 shadow-xs">
+      <h3 className="font-heading text-[15px] font-semibold text-text-main">
         {history.drug.charAt(0).toUpperCase() + history.drug.slice(1)}
         {written.length > 0 && <span className="font-body font-normal text-text-secondary"> (written as {written.join(', ')})</span>}
       </h3>
-      <ol className="mt-2 space-y-1">
+      <ol className="mt-3 space-y-2">
         {steps.map((step) => (
           <li key={step.key} className="flex items-baseline justify-between gap-3 text-xs">
             <span>
@@ -166,7 +169,7 @@ const MedicationCard: React.FC<{ history: MedicationHistory; records: PatientRec
           </li>
         ))}
       </ol>
-      <p className="mt-3 border-t border-border-subtle pt-2 text-xs text-text-main">
+      <p className="mt-4 border-t border-border-subtle pt-3 text-xs text-text-main">
         <span className="font-medium">Status: </span>
         {status.state === 'stopped'
           ? `Stopped on ${formatRecordDate(status.date)}`
@@ -213,7 +216,7 @@ export const MedicalHistoryTimeline: React.FC<MedicalHistoryTimelineProps> = ({
   const stats = records.extractionStats;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-7">
+    <div className="mx-auto max-w-4xl space-y-8">
       <header className="border-b border-border-subtle pb-6">
         <p className="mb-2 text-sm text-text-secondary">{eyebrow}</p>
         <h1 className="font-heading text-3xl font-semibold text-forest">Medical history</h1>
@@ -275,11 +278,11 @@ export const MedicalHistoryTimeline: React.FC<MedicalHistoryTimelineProps> = ({
           </section>
 
           {showMedicines && (
-            <section aria-labelledby="medicines-heading" className="space-y-3">
+            <section aria-labelledby="medicines-heading" className="space-y-4">
               <h2 id="medicines-heading" className="flex items-center gap-2 font-heading text-base font-semibold text-forest">
                 <Pill size={16} /> Medicines
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {records.medicationHistories.map((history) => (
                   <MedicationCard key={history.drug} history={history} records={records} onOpenSource={onOpenSource} />
                 ))}
@@ -293,22 +296,22 @@ export const MedicalHistoryTimeline: React.FC<MedicalHistoryTimelineProps> = ({
               <p className="mt-1 text-xs text-text-secondary">Try another document type or category.</p>
             </div>
           ) : (
-            <section aria-labelledby="timeline-heading" className="space-y-3">
+            <section aria-labelledby="timeline-heading" className="space-y-4">
               <h2 id="timeline-heading" className="font-heading text-base font-semibold text-forest">
                 Timeline
               </h2>
               <ol className="ml-3 border-l border-border-medium">
                 {timeline.dated.map((entry) => (
-                  <li key={entry.document.id} className="relative pb-5 pl-6 last:pb-0">
-                    <span className="absolute -left-[5px] top-4 h-2.5 w-2.5 rounded-full bg-forest" aria-hidden="true" />
-                    <time className="mb-1.5 block font-mono text-xs text-text-muted">{formatRecordDate(entry.date)}</time>
+                  <li key={entry.document.id} className="relative pb-8 pl-7 last:pb-0">
+                    <span className="absolute -left-[6px] top-1 h-3 w-3 rounded-full border-2 border-white bg-forest ring-1 ring-forest" aria-hidden="true" />
+                    <time className="mb-2.5 block text-sm font-semibold text-forest">{formatRecordDate(entry.date)}</time>
                     <EntryCard entry={entry} onOpenSource={onOpenSource} />
                   </li>
                 ))}
               </ol>
 
               {timeline.undated.length > 0 && (
-                <div className="space-y-3 pt-4">
+                <div className="space-y-4 border-t border-border-subtle pt-6">
                   <h3 className="flex items-center gap-2 font-heading text-sm font-semibold text-warning">
                     <CalendarX size={15} /> Undated / needs review
                   </h3>
@@ -321,7 +324,7 @@ export const MedicalHistoryTimeline: React.FC<MedicalHistoryTimelineProps> = ({
           )}
 
           {timeline.familyHistory.length > 0 && category === 'all' && documentType === 'all' && (
-            <details className="rounded-xl border border-border-subtle bg-white p-4">
+            <details className="rounded-xl border border-border-subtle bg-white px-5 py-4">
               <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-text-main">
                 <Users size={15} /> Family history ({timeline.familyHistory.length})
               </summary>

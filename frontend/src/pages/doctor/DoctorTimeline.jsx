@@ -113,7 +113,7 @@ export default function DoctorTimeline({ patient, onAccessLost, onNavigate }) {
         </div>
       ) : (
         <>
-          <ol className="relative mt-6 space-y-4 before:absolute before:bottom-4 before:left-[11px] before:top-4 before:w-px before:bg-aubergine/15">
+          <ol className="relative mt-8 space-y-6 before:absolute before:bottom-4 before:left-[11px] before:top-4 before:w-px before:bg-aubergine/15">
             {dated.map((entry) => (
               <TimelineEntry
                 key={entry.document.id}
@@ -135,11 +135,11 @@ export default function DoctorTimeline({ patient, onAccessLost, onNavigate }) {
           )}
 
           {undated.length > 0 && (
-            <section className="mt-8" aria-labelledby="undated-heading">
-              <h2 id="undated-heading" className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-aubergine">
+            <section className="mt-10 border-t border-hairline pt-6" aria-labelledby="undated-heading">
+              <h2 id="undated-heading" className="mb-4 flex items-center gap-2 text-[15px] font-semibold text-aubergine">
                 <CalendarX2 size={16} className="text-ochre" /> Undated / needs review
               </h2>
-              <ol className="space-y-4">
+              <ol className="space-y-6">
                 {undated.map((entry) => (
                   <TimelineEntry
                     key={entry.document.id}
@@ -159,7 +159,7 @@ export default function DoctorTimeline({ patient, onAccessLost, onNavigate }) {
           )}
 
           {view.familyHistory.length > 0 && filter === 'all' && (
-            <details className="mt-8 rounded-3xl bg-chalk p-5">
+            <details className="mt-10 rounded-3xl bg-chalk p-5 sm:p-6">
               <summary className="flex cursor-pointer items-center gap-2 text-[15px] font-semibold">
                 <Users size={16} /> Family history <span className="font-jetbrains text-[11px] text-ink-muted">{view.familyHistory.length}</span>
               </summary>
@@ -197,7 +197,7 @@ function TimelineEntry({ entry, records, flagged, api, canEdit, onOpenSource, on
         />
       )}
       <article className={`rounded-3xl p-5 sm:p-6 ${visit ? 'bg-sage/45' : 'bg-chalk'}`}>
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <header className="flex flex-col gap-3 border-b border-hairline pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <time className="font-jetbrains text-[13px] font-medium text-aubergine">{entry.date ? formatRecordDate(entry.date) : 'Date not established'}</time>
@@ -208,38 +208,41 @@ function TimelineEntry({ entry, records, flagged, api, canEdit, onOpenSource, on
                 </button>
               )}
             </div>
-            <h3 className="mt-1.5 flex items-center gap-2 text-[15px] font-semibold text-aubergine">
+            <h3 className="mt-2 flex items-center gap-2 text-[15px] font-semibold text-aubergine">
               {visit ? <Stethoscope size={16} className="shrink-0 text-moss" /> : <FileText size={16} className="shrink-0 text-ink-muted" />}
               <span className="truncate">{visit ? `Consultation · ${doc.clinicalRecord.doctorName}` : doc.name}</span>
             </h3>
             {visit && doc.clinicalRecord.facility && <p className="mt-0.5 text-xs text-ink-muted">{doc.clinicalRecord.facility}</p>}
-            {entry.reviewReason && <p className="mt-1 text-xs text-ochre">{entry.reviewReason}</p>}
+            {entry.reviewReason && <p className="mt-2 rounded-lg bg-ochre-soft px-2.5 py-1.5 text-xs text-[#7A5A16]">{entry.reviewReason}</p>}
           </div>
           {firstWithQuote && <SourceChip source={{ ...sourceOf(records, firstWithQuote), name: 'Open document' }} onOpen={onOpenSource} />}
         </header>
 
         {/* Medical summary: what this record says, grouped, values exactly as written. */}
-        <div className="mt-4 grid gap-x-6 gap-y-4 md:grid-cols-2">
+        <div className="mt-5 grid gap-x-10 gap-y-6 md:grid-cols-2">
           {GROUPS.map(({ category, label }) => {
             const items = entry.findings.filter((f) => f.category === category);
             if (!items.length) return null;
             return (
               <section key={category}>
-                <h4 className="mb-2 font-inter text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-muted">{label}</h4>
-                <ul className="space-y-2">
+                <h4 className="mb-1 border-b border-hairline pb-2 font-inter text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                  {label} <span className="font-jetbrains font-normal normal-case tracking-normal">· {items.length}</span>
+                </h4>
+                <ul className="divide-y divide-aubergine/8">
                   {items.map((f) => (
-                    <li key={f.id} className="text-sm">
+                    <li key={f.id} className="py-2.5 text-sm">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="font-semibold">
                           {category === 'medication' && f.action && ACTION[f.action] ? `${ACTION[f.action]}: ` : ''}
                           {f.name}
                         </span>
-                        {findingDetail(f) && <span className="font-jetbrains text-[12px] text-ink-muted">{findingDetail(f)}</span>}
                         {QUALIFIER[f.assertion] && <Pill tone={QUALIFIER[f.assertion].tone}>{QUALIFIER[f.assertion].text}</Pill>}
                         {flagged.get(f.id) && <Pill tone="brick">Flagged</Pill>}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <ProvenanceTag kind={provenanceKind(f)} />
+                      {findingDetail(f) && <p className="mt-0.5 font-jetbrains text-[12px] text-ink-muted">{findingDetail(f)}</p>}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        {/* No "AI-extracted" tag: only labels that add information (doctor-verified, doctor-entered, edited). */}
+                        {provenanceKind(f) !== 'ai' && <ProvenanceTag kind={provenanceKind(f)} />}
                         {f.eventDate && f.eventDate !== entry.date && (
                           <span className="font-jetbrains text-[10.5px] text-ink-muted">dated {formatRecordDate(f.eventDate)}</span>
                         )}
@@ -254,15 +257,15 @@ function TimelineEntry({ entry, records, flagged, api, canEdit, onOpenSource, on
         </div>
 
         {visit && doc.clinicalRecord.observations && (
-          <div className="mt-4 rounded-2xl bg-white/60 p-4">
-            <h4 className="mb-1 font-inter text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Observations</h4>
+          <div className="mt-5 rounded-2xl bg-white/60 p-4">
+            <h4 className="mb-1.5 font-inter text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Observations</h4>
             <p className="whitespace-pre-line text-sm leading-6">{doc.clinicalRecord.observations}</p>
           </div>
         )}
 
         {/* Corrections for document findings, with the same rules as the patient's review. */}
         {!visit && (
-          <div className="mt-4 border-t border-hairline pt-3">
+          <div className="mt-5 border-t border-hairline pt-4">
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}

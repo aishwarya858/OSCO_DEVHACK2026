@@ -176,9 +176,6 @@ const MedicationCard: React.FC<{ history: MedicationHistory; records: PatientRec
           : status.state === 'last_documented_active'
             ? `Last documented active on ${formatRecordDate(status.date)}; no later record found.`
             : 'Mentioned without a date.'}
-        {status.possiblyOutdated && (
-          <span className="ml-2 rounded bg-warning-subtle px-1.5 py-0.5 text-[10px] font-medium text-warning">May be outdated</span>
-        )}
       </p>
       {status.state === 'last_documented_active' && (
         <p className="mt-1 text-[11px] text-text-secondary">The records cannot show whether it is still being taken.</p>

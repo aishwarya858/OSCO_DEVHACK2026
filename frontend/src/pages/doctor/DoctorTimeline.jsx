@@ -28,6 +28,9 @@ const QUALIFIER = {
 
 const ACTION = { start: 'Started', change: 'Dose changed', stop: 'Stopped', continue: 'Continued' };
 
+// The medical history does not show "possibly outdated" medicine alerts.
+const historyFlags = (records) => openFlags(records).filter((flag) => flag.type !== 'stale_medication');
+
 /**
  * Medical History tab (MVP document 6.2.5): the complete timeline, newest first
  * by the date written in each record, with a medical summary of every visit and
@@ -44,7 +47,7 @@ export default function DoctorTimeline({ patient, onAccessLost, onNavigate }) {
     if (state.status !== 'ready') return null;
     const timeline = buildTimeline(state.records);
     const flagged = new Map();
-    for (const flag of openFlags(state.records)) for (const id of flag.findingIds) flagged.set(id, (flagged.get(id) ?? 0) + 1);
+    for (const flag of historyFlags(state.records)) for (const id of flag.findingIds) flagged.set(id, (flagged.get(id) ?? 0) + 1);
     return { ...timeline, flagged };
   }, [state]);
 
@@ -59,7 +62,7 @@ export default function DoctorTimeline({ patient, onAccessLost, onNavigate }) {
   const dated = view.dated.filter(matches);
   const undated = view.undated.filter(matches);
   const verified = records.findings.filter((f) => ['doctor', 'doctor-entered'].includes(provenanceKind(f))).length;
-  const alerts = openFlags(records).length;
+  const alerts = historyFlags(records).length;
 
   // After a correction the server re-runs reconciliation; refresh now and once it has finished.
   const afterChange = () => {

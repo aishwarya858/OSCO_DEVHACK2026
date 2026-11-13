@@ -12,6 +12,8 @@ const KINDS = {
 };
 
 export function ProvenanceTag({ kind, onDark = false, className = '' }) {
+  // AI-extracted is the default for document findings, so it is not labelled.
+  if (kind === 'ai') return null;
   const style = KINDS[kind] ?? KINDS.computed;
   return (
     <span

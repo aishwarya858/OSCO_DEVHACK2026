@@ -94,3 +94,9 @@ export const getDoctorMe = () => doctorRequest('/api/doctor/me', { headers: auth
  */
 export const askDoctorAssistant = (publicId, question, signal) =>
 	doctorRequest(`${patientPath(publicId)}/chat`, { method: 'POST', body: JSON.stringify({ question }), headers: auth(), signal });
+
+/**
+ * Create a doctor account. It starts 'pending' until the doctor's hospital verifies it.
+ * @param {{ name: string, email: string, password: string, licenseNumber: string }} input
+ */
+export const registerDoctor = (input) => apiRequest('/api/auth/doctor/register', { method: 'POST', body: JSON.stringify(input) });

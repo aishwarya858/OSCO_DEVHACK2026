@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { ArrowRight, HeartPulse } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HeartPulse } from 'lucide-react';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 
 export interface PatientAuthProps {
   onRegister: (name: string, email: string, password: string) => Promise<void>;
   onLogin: (email: string, password: string) => Promise<void>;
+  /** Login or sign-up, chosen by the page address (/patient/login or /patient/signup) */
+  mode: 'login' | 'signup';
+  onSwitchMode: (mode: 'login' | 'signup') => void;
+  onBack: () => void;
   onOpenDoctorPortal: () => void;
   error?: string;
   isSubmitting: boolean;
@@ -13,11 +17,13 @@ export interface PatientAuthProps {
 export const PatientAuth: React.FC<PatientAuthProps> = ({
   onRegister,
   onLogin,
+  mode,
+  onSwitchMode,
+  onBack,
   onOpenDoctorPortal,
   error,
   isSubmitting,
 }) => {
-  const [mode, setMode] = useState<'signup' | 'login'>('signup');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,6 +69,13 @@ export const PatientAuth: React.FC<PatientAuthProps> = ({
 
         <section className="p-8 sm:p-12 flex flex-col justify-center">
           <div className="max-w-sm w-full mx-auto">
+            <button
+              type="button"
+              onClick={onBack}
+              className="mb-6 inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-forest cursor-pointer"
+            >
+              <ArrowLeft size={15} /> Back
+            </button>
             <p className="text-sm text-text-secondary mb-2">{mode === 'signup' ? 'Get started' : 'Welcome back'}</p>
             <h2 className="font-heading text-2xl font-semibold text-forest">
               {mode === 'signup' ? 'Create your patient account' : 'Log in to OSCO'}
@@ -144,7 +157,7 @@ export const PatientAuth: React.FC<PatientAuthProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setMode(mode === 'signup' ? 'login' : 'signup');
+                  onSwitchMode(mode === 'signup' ? 'login' : 'signup');
                   setFormError('');
                 }}
                 className="font-semibold text-forest hover:underline"
@@ -152,13 +165,12 @@ export const PatientAuth: React.FC<PatientAuthProps> = ({
                 {mode === 'signup' ? 'Log in' : 'Create an account'}
               </button>
             </p>
-            <button
-              type="button"
-              onClick={onOpenDoctorPortal}
-              className="mt-8 w-full text-center text-xs text-text-muted hover:text-forest"
-            >
-              Open clinician portal
-            </button>
+            <p className="mt-8 text-center text-xs text-text-muted">
+              Are you a doctor?{' '}
+              <button type="button" onClick={onOpenDoctorPortal} className="font-medium text-forest hover:underline cursor-pointer">
+                Go to doctor login
+              </button>
+            </p>
           </div>
         </section>
       </div>

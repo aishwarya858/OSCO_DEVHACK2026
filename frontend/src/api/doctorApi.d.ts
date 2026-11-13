@@ -45,3 +45,5 @@ export function askDoctorAssistant(
   question: string,
   signal?: AbortSignal,
 ): Promise<{ data: import('./queries.js').AssistantAnswer }>;
+
+export function registerDoctor(input: { name: string; email: string; password: string; licenseNumber: string }): Promise<{ data: { token: string; doctor: DoctorProfile } }>;

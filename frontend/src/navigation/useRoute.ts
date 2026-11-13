@@ -5,17 +5,22 @@ import { useCallback, useEffect, useState } from 'react';
  *   /                  choose patient or doctor
  *   /patient/login     /patient/signup     /patient   (portal)
  *   /doctor/login      /doctor/signup      /doctor    (portal)
+ *   /admin/login                           /admin     (hospital admin: verify doctors)
  * The Vite dev server already serves index.html for these paths.
  */
+export type Role = 'patient' | 'doctor' | 'admin';
+
 export type Route =
   | { name: 'home' }
-  | { name: 'auth'; role: 'patient' | 'doctor'; mode: 'login' | 'signup' }
-  | { name: 'portal'; role: 'patient' | 'doctor' };
+  | { name: 'auth'; role: Role; mode: 'login' | 'signup' }
+  | { name: 'portal'; role: Role };
 
 export const parseRoute = (pathname: string): Route => {
   const parts = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
   const role = parts[0];
-  if (role !== 'patient' && role !== 'doctor') return { name: 'home' };
+  if (role !== 'patient' && role !== 'doctor' && role !== 'admin') return { name: 'home' };
+  // Admin accounts are created by the hospital, so there is no admin sign-up page.
+  if (role === 'admin' && parts[1] === 'signup') return { name: 'auth', role, mode: 'login' };
   if (parts[1] === 'login' || parts[1] === 'signup') return { name: 'auth', role, mode: parts[1] };
   return { name: 'portal', role };
 };

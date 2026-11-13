@@ -3,6 +3,7 @@ import { ArrowRight, HeartPulse, Stethoscope, UserRound } from 'lucide-react';
 
 export interface LandingProps {
   onChoose: (role: 'patient' | 'doctor', mode: 'login' | 'signup') => void;
+  onOpenAdmin: () => void;
 }
 
 const ROLES = [
@@ -31,7 +32,7 @@ const ROLES = [
 ];
 
 /** Home page: choose whether to continue as a patient or a doctor. */
-export const Landing: React.FC<LandingProps> = ({ onChoose }) => (
+export const Landing: React.FC<LandingProps> = ({ onChoose, onOpenAdmin }) => (
   <main className="min-h-screen bg-osco-bg flex items-center justify-center px-4 py-12">
     <div className="w-full max-w-4xl">
       <div className="flex items-center justify-center gap-3">
@@ -74,6 +75,13 @@ export const Landing: React.FC<LandingProps> = ({ onChoose }) => (
           </section>
         ))}
       </div>
+
+      <p className="mt-8 text-center text-xs text-text-muted">
+        Hospital administrator?{' '}
+        <button type="button" onClick={onOpenAdmin} className="font-medium text-forest hover:underline cursor-pointer">
+          Sign in to verify doctors
+        </button>
+      </p>
     </div>
   </main>
 );

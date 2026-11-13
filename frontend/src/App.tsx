@@ -7,9 +7,13 @@ import { DoctorPortalLayout } from './components/layout/DoctorPortalLayout';
 import { PatientAuth } from './pages/patient/PatientAuth';
 import { DoctorAuth } from './pages/doctor/DoctorLogin';
 import { Landing } from './pages/Landing';
+import { AdminLogin } from './pages/admin/AdminLogin';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { BackendStatusIndicator } from './components/ui/BackendStatusIndicator';
 import { clearAuthToken, getAuthToken, saveAuthToken, type PatientAccount } from './auth/patientStorage';
 import { getDoctorToken } from './auth/doctorSession';
+import { clearAdminSession, getAdminProfile, getAdminToken, type AdminProfile } from './auth/adminSession';
+import { ADMIN_SIGNED_OUT_EVENT } from './api/adminApi.js';
 import { getPatientProfile, loginPatient, registerPatient } from './api/queries.js';
 import { pathFor, useRoute, type Route } from './navigation/useRoute';
 
@@ -21,12 +25,13 @@ import { pathFor, useRoute, type Route } from './navigation/useRoute';
  */
 const resolveRoute = (
   route: Route,
-  session: { patientSignedIn: boolean; patientChecking: boolean; doctorSignedIn: boolean },
+  session: { patientSignedIn: boolean; patientChecking: boolean; doctorSignedIn: boolean; adminSignedIn: boolean },
 ): Route => {
   if (route.name === 'portal' && route.role === 'patient' && !session.patientSignedIn && !session.patientChecking) {
     return { name: 'auth', role: 'patient', mode: 'login' };
   }
   if (route.name === 'portal' && route.role === 'doctor' && !session.doctorSignedIn) return { name: 'auth', role: 'doctor', mode: 'login' };
+  if (route.name === 'portal' && route.role === 'admin' && !session.adminSignedIn) return { name: 'auth', role: 'admin', mode: 'login' };
   return route;
 };
 
@@ -41,6 +46,18 @@ export function App() {
   const [authError, setAuthError] = useState('');
   const [doctorSignedIn, setDoctorSignedIn] = useState(() => Boolean(getDoctorToken()));
   const [doctorNotice, setDoctorNotice] = useState('');
+  const [admin, setAdmin] = useState<AdminProfile | null>(() => (getAdminToken() ? getAdminProfile() : null));
+  const [adminNotice, setAdminNotice] = useState('');
+
+  // The server rejected the saved admin login (expired or removed): back to the admin login.
+  useEffect(() => {
+    const onExpired = () => {
+      setAdmin(null);
+      setAdminNotice('Your session has ended. Please sign in again.');
+    };
+    window.addEventListener(ADMIN_SIGNED_OUT_EVENT, onExpired);
+    return () => window.removeEventListener(ADMIN_SIGNED_OUT_EVENT, onExpired);
+  }, []);
 
   // Restore a saved patient login.
   useEffect(() => {
@@ -71,6 +88,7 @@ export function App() {
     patientSignedIn: Boolean(patientAccount),
     patientChecking: !authReady,
     doctorSignedIn,
+    adminSignedIn: Boolean(admin),
   });
 
   // Keep the address bar in step with a redirect (no new history entry).
@@ -120,7 +138,40 @@ export function App() {
     return (
       <>
         <BackendStatusIndicator />
-        <Landing onChoose={goToAuth} />
+        <Landing onChoose={goToAuth} onOpenAdmin={() => navigate({ name: 'auth', role: 'admin', mode: 'login' })} />
+      </>
+    );
+  }
+
+  if (view.name === 'auth' && view.role === 'admin') {
+    return (
+      <>
+        <BackendStatusIndicator />
+        <AdminLogin
+          notice={adminNotice}
+          onBack={() => navigate({ name: 'home' })}
+          onLoggedIn={(profile) => {
+            setAdminNotice('');
+            setAdmin(profile);
+            navigate({ name: 'portal', role: 'admin' }, { replace: true });
+          }}
+        />
+      </>
+    );
+  }
+
+  if (view.name === 'portal' && view.role === 'admin' && admin) {
+    return (
+      <>
+        <BackendStatusIndicator />
+        <AdminDashboard
+          admin={admin}
+          onSignOut={() => {
+            clearAdminSession();
+            setAdmin(null);
+            navigate({ name: 'home' });
+          }}
+        />
       </>
     );
   }
@@ -179,6 +230,8 @@ export function App() {
     );
   }
 
+  // Admin pages are handled above (a signed-out admin is sent to the admin login).
+  if (view.role === 'admin') return null;
   const portal: PortalType = view.role;
   const activeItemId = portal === 'patient' ? patientItemId : doctorItemId;
   const setActiveItemId = portal === 'patient' ? setPatientItemId : setDoctorItemId;

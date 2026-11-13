@@ -2,7 +2,6 @@ import { getAuthToken } from '../../auth/patientStorage';
 import {
   confirmDocumentFindings,
   dismissFinding,
-  editFinding,
   getDocumentFindings,
   restoreFinding,
   type FindingEdit,
@@ -16,7 +15,8 @@ import {
  */
 export interface ReviewApi {
   load: (documentId: string) => Promise<ReviewResponse>;
-  edit: (documentId: string, findingId: string, changes: FindingEdit) => Promise<ReviewResponse>;
+  /** Correct a finding; null where the viewer may only view (patients) */
+  edit: ((documentId: string, findingId: string, changes: FindingEdit) => Promise<ReviewResponse>) | null;
   dismiss: (documentId: string, findingId: string) => Promise<ReviewResponse>;
   restore: (documentId: string, findingId: string) => Promise<ReviewResponse>;
   /** Add pending findings to the history; null where the viewer may not (doctors) */
@@ -32,7 +32,8 @@ const withPatientToken = <T,>(call: (token: string) => Promise<T>): Promise<T> =
 /** The logged-in patient's own review endpoints. */
 export const patientReviewApi: ReviewApi = {
   load: (documentId) => withPatientToken((t) => getDocumentFindings(t, documentId) as Promise<ReviewResponse>),
-  edit: (documentId, findingId, changes) => withPatientToken((t) => editFinding(t, documentId, findingId, changes)),
+  // Patients view findings only; corrections are made by a doctor with edit access.
+  edit: null,
   dismiss: (documentId, findingId) => withPatientToken((t) => dismissFinding(t, documentId, findingId)),
   restore: (documentId, findingId) => withPatientToken((t) => restoreFinding(t, documentId, findingId)),
   confirm: (documentId) => withPatientToken((t) => confirmDocumentFindings(t, documentId)),

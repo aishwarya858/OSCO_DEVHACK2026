@@ -125,7 +125,6 @@ export interface ReviewResponse {
 export function getMyRecords(token: string): Promise<{
   data: import('../types/records').PatientRecords & { pendingReview: { documents: number; findings: number } };
 }>;
-export function editFinding(token: string, documentId: string, findingId: string, changes: FindingEdit): Promise<ReviewResponse>;
 export function dismissFinding(token: string, documentId: string, findingId: string): Promise<ReviewResponse>;
 export function restoreFinding(token: string, documentId: string, findingId: string): Promise<ReviewResponse>;
 export function confirmDocumentFindings(token: string, documentId: string): Promise<ReviewResponse>;

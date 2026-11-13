@@ -159,8 +159,7 @@ const review = findingReviewHandlers({
 });
 
 router.get('/:id', requirePatientAuth, review.get);
-/** Edit a finding: saved as a new version labelled as patient-edited; the original stays as evidence. */
-router.patch('/:id/findings/:findingId', requirePatientAuth, review.edit);
+// Patients view findings only: there is no patient edit route (doctors with edit consent correct findings).
 /** Remove a wrong finding. It is kept (dismissed), never shown in the history. */
 router.post('/:id/findings/:findingId/dismiss', requirePatientAuth, review.dismiss);
 /** Undo a removal: the finding returns to where it was. */

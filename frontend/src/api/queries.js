@@ -52,13 +52,6 @@ export const getMyRecords = (token) => apiRequest('/api/me/records', { headers: 
 const findingPath = (documentId, findingId) =>
 	`/api/documents/${encodeURIComponent(documentId)}/findings/${encodeURIComponent(findingId)}`;
 
-/**
- * Correct a finding. Saved as a new version labelled as patient-edited; the original is kept.
- * @param {string} token @param {string} documentId @param {string} findingId @param {object} changes
- */
-export const editFinding = (token, documentId, findingId, changes) =>
-	apiRequest(findingPath(documentId, findingId), { method: 'PATCH', body: JSON.stringify(changes), headers: authHeader(token) });
-
 /** Remove a wrong finding (kept, never shown). */
 export const dismissFinding = (token, documentId, findingId) =>
 	apiRequest(`${findingPath(documentId, findingId)}/dismiss`, { method: 'POST', headers: authHeader(token) });

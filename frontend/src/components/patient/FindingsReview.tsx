@@ -149,12 +149,12 @@ export const FindingsReview: React.FC<FindingsReviewProps> = ({
         )
       ) : pending.length > 0 ? (
         <p className="text-sm text-text-secondary">
-          Check what was read from this document. <span className="font-medium text-text-main">Edit</span> anything that is wrong,{' '}
-          <span className="font-medium text-text-main">remove</span> anything that is not yours, then add the rest to your medical history.
+          Check what was read from this document. <span className="font-medium text-text-main">Remove</span> anything that is not yours,
+          then add the rest to your medical history.
         </p>
       ) : confirmed.length > 0 ? (
         <p className="flex items-center gap-1.5 text-sm font-medium text-forest">
-          <CheckCircle2 size={15} /> Added to your medical history. You can still edit or remove findings here.
+          <CheckCircle2 size={15} /> Added to your medical history. You can still remove findings here.
         </p>
       ) : (
         <p className="text-sm text-text-secondary">All findings from this document were removed, so nothing was added to your history.</p>
@@ -169,7 +169,7 @@ export const FindingsReview: React.FC<FindingsReviewProps> = ({
                 saving={busy === finding.id}
                 onCancel={() => setEditingId(null)}
                 onSave={async (changes) => {
-                  const ok = await run(finding.id, () => api.edit(document.id, finding.id, changes));
+                  const ok = await run(finding.id, () => api.edit!(document.id, finding.id, changes));
                   if (ok) setEditingId(null);
                 }}
               />
@@ -178,6 +178,7 @@ export const FindingsReview: React.FC<FindingsReviewProps> = ({
                 finding={finding}
                 viewer={viewer}
                 canEdit={canEdit}
+                showEdit={api.edit !== null}
                 busy={busy === finding.id}
                 disabled={busy !== null}
                 onEdit={() => setEditingId(finding.id)}
@@ -217,12 +218,14 @@ const FindingSummary: React.FC<{
   finding: ExtractedFinding;
   viewer: Viewer;
   canEdit: boolean;
+  /** False for patients: they can view (and remove) findings but not edit them */
+  showEdit: boolean;
   busy: boolean;
   disabled: boolean;
   onEdit: () => void;
   onDismiss: () => void;
   onRestore: () => void;
-}> = ({ finding, viewer, canEdit, busy, disabled, onEdit, onDismiss, onRestore }) => {
+}> = ({ finding, viewer, canEdit, showEdit, busy, disabled, onEdit, onDismiss, onRestore }) => {
   const dismissed = finding.reviewStatus === 'dismissed';
   const self = viewer === 'patient';
   const qualifier = finding.subject !== 'patient' ? `${finding.subjectRelation ?? 'Family'} (not ${self ? 'you' : 'the patient'})` : QUALIFIERS[finding.assertion];
@@ -263,9 +266,11 @@ const FindingSummary: React.FC<{
             </button>
           ) : (
             <>
-              <button type="button" disabled={disabled} onClick={onEdit} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-forest hover:bg-eucalyptus-subtle disabled:opacity-50">
-                <Pencil size={13} /> Edit
-              </button>
+              {showEdit && (
+                <button type="button" disabled={disabled} onClick={onEdit} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-forest hover:bg-eucalyptus-subtle disabled:opacity-50">
+                  <Pencil size={13} /> Edit
+                </button>
+              )}
               <button type="button" disabled={disabled} onClick={onDismiss} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-50">
                 <Trash2 size={13} /> {self ? 'Remove' : 'Delete'}
               </button>

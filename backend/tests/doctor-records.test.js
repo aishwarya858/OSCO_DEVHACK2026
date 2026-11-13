@@ -248,9 +248,8 @@ describe('doctor access to patient records', { skip: !TEST_DB && 'set TEST_DATAB
 		const confirm = await call('POST', `/api/documents/${documentId}/confirm`, patient.token);
 		assert.equal(confirm.status, 200);
 		assert.equal(confirm.body.data.document.review.pending, 0);
+		// Patients can view findings but no longer edit them.
 		const edit = await call('PATCH', `/api/documents/${documentId}/findings/${ids.pending}`, patient.token, { name: 'Essential hypertension' });
-		assert.equal(edit.status, 200);
-		assert.equal(edit.body.data.finding.sourceType, 'patient_corrected');
-		assert.equal(edit.body.data.finding.editedBy.type, 'patient');
+		assert.equal(edit.status, 404);
 	});
 });

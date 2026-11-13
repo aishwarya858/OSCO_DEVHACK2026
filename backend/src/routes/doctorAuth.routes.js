@@ -7,7 +7,8 @@ import { env } from '../config/env.js';
 import { recordAuditSafely, requestIp } from '../services/audit.service.js';
 
 /**
- * POST /api/auth/doctor/login (MVP document 6.2.1, 8.9).
+ * POST /api/auth/doctor/register  create an account; it starts 'pending' (MVP 5.3)
+ * POST /api/auth/doctor/login     (MVP document 6.2.1, 8.9).
  *
  * Pending, rejected and revoked doctors can log in and see their status; they
  * are refused on every doctor route by requireVerifiedDoctor, which reads the
@@ -33,6 +34,70 @@ const issueDoctorToken = (doctorId) =>
 		expiresIn: '1h',
 	});
 
+const BCRYPT_ROUNDS = 12;
+const isEmail = (email) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const invalidInput = (res, message) => res.status(400).json({ error: { code: 'INVALID_INPUT', message } });
+
+const sessionBody = (doctor) => ({
+	data: {
+		token: issueDoctorToken(doctor.id),
+		doctor: {
+			id: doctor.id,
+			name: doctor.full_name,
+			email: doctor.email,
+			verificationStatus: doctor.verification_status,
+			statusMessage: STATUS_MESSAGES[doctor.verification_status] ?? null,
+		},
+	},
+});
+
+/**
+ * Self-registration. The account is always created as 'pending': the doctor can
+ * sign in and see their status, but every patient route stays closed
+ * (requireVerifiedDoctor) until their hospital verifies them.
+ */
+router.post('/register', async (req, res, next) => {
+	const { name, email, password, licenseNumber } = req.body ?? {};
+	if ([name, email, password, licenseNumber].some((v) => typeof v !== 'string')) {
+		return invalidInput(res, 'Name, email, medical licence number and password are required.');
+	}
+	const fullName = name.trim();
+	const normalizedEmail = email.trim().toLowerCase();
+	const licence = licenseNumber.trim().toUpperCase();
+	if (!fullName || fullName.length > 150) return invalidInput(res, 'Name must be between 1 and 150 characters.');
+	if (!isEmail(normalizedEmail)) return invalidInput(res, 'Enter a valid email address.');
+	if (!/^[A-Z0-9][A-Z0-9/.-]{3,39}$/.test(licence)) return invalidInput(res, 'Enter a valid medical licence / registration number (4–40 letters, digits, / . -).');
+	if (password.length < 8 || Buffer.byteLength(password, 'utf8') > PASSWORD_MAX_BYTES) {
+		return invalidInput(res, 'Password must be at least 8 characters and no more than 72 UTF-8 bytes.');
+	}
+	try {
+		const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+		const { rows } = await pool.query(
+			`INSERT INTO doctors (full_name, email, password_hash, license_number, verification_status)
+			 VALUES ($1, $2, $3, $4, 'pending')
+			 RETURNING id, full_name, email, verification_status`,
+			[fullName, normalizedEmail, passwordHash, licence],
+		);
+		const doctor = rows[0];
+		await recordAuditSafely({
+			actorType: 'doctor', actorId: doctor.id, action: 'doctor.register', resourceType: 'doctor', resourceId: doctor.id,
+			outcome: 'allowed', details: { status: doctor.verification_status }, ipAddress: requestIp(req),
+		});
+		return res.status(201).json(sessionBody(doctor));
+	} catch (error) {
+		if (error.code === '23505') {
+			const licenceTaken = /licen[sc]e/i.test(error.constraint ?? '');
+			return res.status(409).json({
+				error: {
+					code: 'ACCOUNT_EXISTS',
+					message: licenceTaken ? 'A doctor with this licence number is already registered.' : 'An account with this email already exists.',
+				},
+			});
+		}
+		return next(error);
+	}
+});
+
 const invalid = (res) => res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Email or password is incorrect.' } });
 
 router.post('/login', async (req, res, next) => {
@@ -54,18 +119,7 @@ router.post('/login', async (req, res, next) => {
 			actorType: 'doctor', actorId: doctor.id, action: 'doctor.login', resourceType: 'session',
 			outcome: 'allowed', details: { status: doctor.verification_status }, ipAddress: requestIp(req),
 		});
-		return res.status(200).json({
-			data: {
-				token: issueDoctorToken(doctor.id),
-				doctor: {
-					id: doctor.id,
-					name: doctor.full_name,
-					email: doctor.email,
-					verificationStatus: doctor.verification_status,
-					statusMessage: STATUS_MESSAGES[doctor.verification_status] ?? null,
-				},
-			},
-		});
+		return res.status(200).json(sessionBody(doctor));
 	} catch (error) {
 		return next(error);
 	}

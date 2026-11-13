@@ -126,12 +126,28 @@ export type FlagType =
   | 'ambiguous_date'
   | 'orphan_reference'
   | 'stale_medication'
-  | 'active_after_stop';
+  | 'active_after_stop'
+  | 'inconsistent_detail'
+  | 'needs_verification'
+  | 'unverified_finding';
+
+/** A page-level source for a flag read from page text (patient details, duplicated documents). */
+export interface FlagEvidence {
+  documentId: string;
+  page: number;
+  quoteStart: number;
+  quoteEnd: number;
+  quote: string;
+  label?: string;
+}
 
 export interface RecordFlag {
   id: string;
   type: FlagType;
   message: string;
+  /** Why it needs attention */
+  reason?: string | null;
+  evidence?: FlagEvidence[];
   findingIds: string[];
   documentIds: string[];
   status: 'open' | 'resolved';

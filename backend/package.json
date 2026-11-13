@@ -10,6 +10,7 @@
     "doctor:create": "node scripts/create-doctor.js",
     "doctor:verify": "node scripts/verify-doctor.js",
     "admin:create": "node scripts/create-admin.js",
+    "flags:recheck": "node scripts/recheck-flags.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {

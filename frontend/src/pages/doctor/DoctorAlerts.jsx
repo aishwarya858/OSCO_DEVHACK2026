@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BadgeCheck, CalendarX2, CheckCircle2, Copy, LoaderCircle, Lock, Pencil, TriangleAlert } from 'lucide-react';
+import { BadgeCheck, CalendarX2, CheckCircle2, Copy, FileText, LoaderCircle, Lock, Pencil, SearchCheck, TriangleAlert, UserRoundX } from 'lucide-react';
 import { useDoctorRecords } from './useDoctorRecords';
 import { doctorReviewApi, resolveFlag, verifyFinding } from '../../api/doctorApi.js';
 import { BriefCard } from '../../components/brief/BriefCard';
@@ -13,6 +13,7 @@ import { documentDateLabel, documentOf, findingIndex, provenanceKind, sourceOf }
 import { sourceTargetFor } from '../../records/source';
 
 const CONFLICT_TYPES = ['contradiction', 'active_after_stop'];
+const VERIFY_TYPES = ['needs_verification', 'unverified_finding'];
 const GAP_TYPES = ['missing_field', 'ambiguous_date', 'orphan_reference', 'stale_medication'];
 const TYPE_LABEL = {
   contradiction: 'Contradiction',
@@ -22,12 +23,18 @@ const TYPE_LABEL = {
   ambiguous_date: 'Ambiguous date',
   orphan_reference: 'No earlier record',
   stale_medication: 'May be outdated',
+  inconsistent_detail: 'Inconsistent detail',
+  needs_verification: 'Needs verification',
+  unverified_finding: 'Unconfirmed finding',
 };
+const AMBER_TYPES = ['duplicate', ...GAP_TYPES, ...VERIFY_TYPES];
 
 /**
  * Alert and Reviews tab (MVP document 6.2.7): the review list for flags raised
- * by fixed reconciliation rules (contradictions, possible duplicates, missing
- * information). Flags are never resolved automatically: with "view and correct"
+ * by fixed reconciliation rules across the whole history (contradictions,
+ * inconsistent patient details / dates / units, results and findings needing
+ * verification, possible duplicates, missing information). Each flag says what
+ * was found, which records are involved, and why it needs attention. Flags are never resolved automatically: with "view and correct"
  * consent the doctor compares the sources side by side, verifies or corrects a
  * version, and marks the flag reviewed with a note. Everything is audited.
  */
@@ -42,6 +49,8 @@ export default function DoctorAlerts({ patient, onAccessLost }) {
   const open = records.flags.filter((f) => f.status === 'open');
   const resolved = records.flags.filter((f) => f.status === 'resolved');
   const conflicts = open.filter((f) => CONFLICT_TYPES.includes(f.type));
+  const inconsistencies = open.filter((f) => f.type === 'inconsistent_detail');
+  const verification = open.filter((f) => VERIFY_TYPES.includes(f.type));
   const duplicates = open.filter((f) => f.type === 'duplicate');
   const gaps = open.filter((f) => GAP_TYPES.includes(f.type));
   const byId = findingIndex(records);
@@ -55,7 +64,7 @@ export default function DoctorAlerts({ patient, onAccessLost }) {
   const openSource = (source) => {
     if (source.findingId) setTarget(sourceTargetFor(records, source.findingId));
   };
-  const itemProps = { records, byId, currentIds, canEdit, api, publicId: patient.id, onChanged: afterChange, onOpenSource: openSource };
+  const itemProps = { records, byId, currentIds, canEdit, api, publicId: patient.id, onChanged: afterChange, onOpenSource: openSource, onOpenTarget: setTarget };
 
   return (
     <DoctorPageShell
@@ -69,8 +78,10 @@ export default function DoctorAlerts({ patient, onAccessLost }) {
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile label="Contradictions" value={conflicts.length} unit="open" tone={conflicts.length ? 'dark' : 'chalk'} />
+        <StatTile label="Inconsistent details" value={inconsistencies.length} unit="open" />
+        <StatTile label="Needs verification" value={verification.length} unit="open" />
         <StatTile label="Possible duplicates" value={duplicates.length} unit="open" />
         <StatTile label="Missing information" value={gaps.length} unit="open" tone="plum" />
         <StatTile label="Reviewed" value={resolved.length} unit="by a doctor" tone="sage" />
@@ -95,6 +106,30 @@ export default function DoctorAlerts({ patient, onAccessLost }) {
           )}
         </BriefCard>
 
+        <BriefCard title="Inconsistent details" icon={UserRoundX} className="border-l-4 border-brick lg:col-span-6">
+          {inconsistencies.length ? (
+            <ul className="space-y-4">
+              {inconsistencies.map((flag) => (
+                <FlagItem key={flag.id} flag={flag} {...itemProps} />
+              ))}
+            </ul>
+          ) : (
+            <EmptyNote>No open inconsistency. Different patient names, dates of birth, ages, units or impossible dates between records appear here.</EmptyNote>
+          )}
+        </BriefCard>
+
+        <BriefCard title="Needs verification" icon={SearchCheck} className="border-l-4 border-ochre lg:col-span-6">
+          {verification.length ? (
+            <ul className="space-y-4">
+              {verification.map((flag) => (
+                <FlagItem key={flag.id} flag={flag} compact {...itemProps} />
+              ))}
+            </ul>
+          ) : (
+            <EmptyNote>Nothing to verify. Results outside the report’s own range, suspected or unconfirmed findings, and unverified edits appear here.</EmptyNote>
+          )}
+        </BriefCard>
+
         <BriefCard title="Possible duplicates" icon={Copy} className="border-l-4 border-ochre lg:col-span-6">
           {duplicates.length ? (
             <ul className="space-y-4">
@@ -103,7 +138,7 @@ export default function DoctorAlerts({ patient, onAccessLost }) {
               ))}
             </ul>
           ) : (
-            <EmptyNote>No possible duplicate. The same result or prescription on the same date in two documents appears here.</EmptyNote>
+            <EmptyNote>No possible duplicate. A document uploaded twice, or the same result, diagnosis or prescription on the same date in two documents, appears here.</EmptyNote>
           )}
         </BriefCard>
 
@@ -115,7 +150,7 @@ export default function DoctorAlerts({ patient, onAccessLost }) {
               ))}
             </ul>
           ) : (
-            <EmptyNote>No open gap. Missing doses, units or dates appear here. This does not mean the record is complete.</EmptyNote>
+            <EmptyNote>No open gap. Missing doses, units, reference ranges, dates, patient names and results appear here. This does not mean the record is complete.</EmptyNote>
           )}
         </BriefCard>
 
@@ -146,14 +181,21 @@ export default function DoctorAlerts({ patient, onAccessLost }) {
 }
 
 /** One flag: the versions involved side by side, plus verify / correct / mark reviewed. */
-function FlagItem({ flag, records, byId, currentIds, canEdit, api, publicId, onChanged, onOpenSource, onDark = false, compact = false }) {
+function FlagItem({ flag, records, byId, currentIds, canEdit, api, publicId, onChanged, onOpenSource, onOpenTarget, onDark = false, compact = false }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(null);
   const [resolving, setResolving] = useState(false);
   const [note, setNote] = useState('');
   const findings = flag.findingIds.map((id) => byId.get(id)).filter(Boolean);
-  const docsOnly = flag.documentIds.filter((id) => !findings.some((f) => f.documentId === id)).map((id) => records.documents.find((d) => d.id === id)).filter(Boolean);
+  // Page evidence (flags read from page text), resolved to the documents the viewer can open.
+  const evidence = (flag.evidence ?? [])
+    .map((e) => ({ ...e, document: records.documents.find((d) => d.id === e.documentId) }))
+    .filter((e) => e.document && e.document.pages?.some((p) => p.pageNumber === e.page));
+  const docsOnly = flag.documentIds
+    .filter((id) => !findings.some((f) => f.documentId === id) && !evidence.some((e) => e.documentId === id))
+    .map((id) => records.documents.find((d) => d.id === id))
+    .filter(Boolean);
 
   const run = async (key, action) => {
     setBusy(key);
@@ -177,11 +219,38 @@ function FlagItem({ flag, records, byId, currentIds, canEdit, api, publicId, onC
   return (
     <li className={`rounded-2xl ${onDark ? 'border border-aubergine-line' : 'bg-white/40'} p-3 sm:p-4`}>
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone={flag.type === 'duplicate' || GAP_TYPES.includes(flag.type) ? 'ochre' : 'brick'} onDark={onDark}>
+        <Pill tone={AMBER_TYPES.includes(flag.type) ? 'ochre' : 'brick'} onDark={onDark}>
           {TYPE_LABEL[flag.type] ?? flag.type}
         </Pill>
         <span className={`text-[13px] font-medium ${onDark ? 'text-white/90' : ''}`}>{flag.message}</span>
       </div>
+      {flag.reason && (
+        <p className={`mt-1.5 text-[12.5px] leading-5 ${muted}`}>
+          <span className="font-semibold">Why it needs attention: </span>
+          {flag.reason}
+        </p>
+      )}
+      {evidence.length > 0 && (
+        <div className="mt-3 flex flex-col gap-2">
+          {evidence.map((e, i) => (
+            <div key={`${e.documentId}-${e.page}-${i}`} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl p-3 ${panel}`}>
+              <div className="min-w-0">
+                <p className={`text-[11px] ${muted}`}>
+                  {e.document.name}, <span className="font-jetbrains">{documentDateLabel(e.document)}</span> · page {e.page}
+                </p>
+                <p className="text-sm font-medium">“{e.quote.replace(/\s+/g, ' ')}”</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenTarget({ document: e.document, page: e.page, quoteStart: e.quoteStart, quoteEnd: e.quoteEnd, quote: e.quote })}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${ghost}`}
+              >
+                <FileText size={12} /> Open source
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {findings.length > 0 && (
         <div className={`mt-3 grid gap-2 ${compact || findings.length === 1 ? '' : 'sm:grid-cols-2'}`}>

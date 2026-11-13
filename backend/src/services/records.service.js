@@ -41,7 +41,7 @@ export const buildPatientRecords = async (patientId, { fileUrl }) => {
 		),
 		// Review flags (8.6): open ones to act on and resolved ones as history; cleared ones are gone.
 		pool.query(
-			`SELECT f.id, f.type, f.message, f.finding_ids, f.document_ids, f.status, f.resolution_note, f.resolved_at, f.created_at,
+			`SELECT f.id, f.type, f.message, f.reason, f.evidence, f.finding_ids, f.document_ids, f.status, f.resolution_note, f.resolved_at, f.created_at,
 			        d.full_name AS resolved_by
 			 FROM record_flags f LEFT JOIN doctors d ON d.id = f.resolved_by_doctor_id
 			 WHERE f.patient_id = $1 AND f.status IN ('open', 'resolved')
@@ -125,6 +125,9 @@ export const buildPatientRecords = async (patientId, { fileUrl }) => {
 			id: f.id,
 			type: f.type,
 			message: f.message,
+			// Why it needs attention, and page sources for flags read from page text (patient details, copies).
+			reason: f.reason ?? null,
+			evidence: Array.isArray(f.evidence) ? f.evidence : [],
 			findingIds: f.finding_ids,
 			documentIds: f.document_ids,
 			status: f.status,

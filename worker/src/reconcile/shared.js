@@ -41,10 +41,34 @@ export const groupBy = (items, keyOf) => {
 /** Every unordered pair of an array. */
 export const pairs = (items) => items.flatMap((a, i) => items.slice(i + 1).map((b) => [a, b]));
 
-/** A flag as the rules return it; the store adds the fingerprint and status. */
-export const flag = (type, message, claims, documentIds = []) => ({
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "10 Jun 2024", "Jun 2024" or "2024" from an ISO date of any precision. */
+export const formatDate = (iso) => {
+	if (!iso) return 'an undated record';
+	const [y, m, d] = String(iso).split('-');
+	if (!m) return y;
+	const month = MONTH_NAMES[Number(m) - 1] ?? m;
+	return d ? `${Number(d)} ${month} ${y}` : `${month} ${y}`;
+};
+
+/** Where a finding comes from, for messages: "lab-2024.pdf (10 Jun 2024)". */
+export const sourceOf = (claim) =>
+	`${claim.document_name ?? 'a doctor-entered record'} (${dateOf(claim) ? formatDate(dateOf(claim)) : 'undated'})`;
+
+/** A value with its unit as written: "7.1 %". */
+export const valueText = (claim) => [claim.value, claim.unit].filter(Boolean).join(' ');
+
+/**
+ * A flag as the rules return it; the store adds the fingerprint and status.
+ * message: what was detected and in which records. reason: why it needs attention.
+ * evidence: page-level sources when the flag comes from page text, not a finding.
+ */
+export const flag = (type, message, claims, documentIds = [], { reason = null, evidence = [] } = {}) => ({
 	type,
 	message,
+	reason,
+	evidence,
 	findingIds: [...new Set(claims.map((c) => c.id).filter(Boolean))],
 	documentIds: [...new Set([...documentIds, ...claims.map((c) => c.document_id).filter(Boolean)])],
 });

@@ -65,7 +65,7 @@ describe('gaps (8.6)', () => {
 		const flags = gaps({
 			claims: [
 				c({ category: 'medication', name: 'Pantoprazole', name_normalised: 'pantoprazole' }),
-				c({ category: 'investigation', name: 'Creatinine', value: '0.9' }),
+				c({ category: 'investigation', name: 'Creatinine', value: '0.9', ref_range: '0.7-1.3' }),
 				c({ category: 'investigation', name: 'Chest X-ray', value: 'clear' }), // not numeric: no unit expected
 			],
 		});

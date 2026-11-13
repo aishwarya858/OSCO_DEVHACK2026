@@ -22,7 +22,7 @@ test('the same result on the same date in two documents is a possible duplicate'
 	const flags = detect({ claims: [lab('metropolis'), lab('thyrocare')] });
 	assert.equal(flags.length, 1);
 	assert.equal(flags[0].type, 'duplicate');
-	assert.match(flags[0].message, /Possible duplicate: Fasting glucose 126 mg\/dL on 2024-01-08/);
+	assert.match(flags[0].message, /Possible duplicate: Fasting glucose 126 mg\/dL on 8 Jan 2024 appears in two documents/);
 	assert.deepEqual(flags[0].documentIds.sort(), ['metropolis', 'thyrocare']);
 });
 

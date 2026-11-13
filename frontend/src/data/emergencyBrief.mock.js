@@ -153,13 +153,4 @@ export const BRIEF = {
       ],
     },
   ],
-
-  /** Newest first: the timeline is drawn left to right in this order. */
-  events: [
-    { id: 'ev-followup', date: 'Jan 2024', title: 'Follow-up visit', type: 'visit', provenance: 'doctor', source: D.mehtaFollowUp2024 },
-    { id: 'ev-echo', date: 'Jan 2023', title: 'Echocardiogram', type: 'imaging', provenance: 'doctor', source: D.fortisEcho2023 },
-    { id: 'ev-htn', date: 'Feb 2020', title: 'Hypertension diagnosed', type: 'diagnosis', provenance: 'doctor', source: D.mehtaConsult2020 },
-    { id: 'ev-t2d', date: 'Aug 2018', title: 'Type 2 diabetes diagnosed', type: 'diagnosis', provenance: 'ai', source: D.apolloDischarge },
-    { id: 'ev-admit', date: 'Aug 2018', title: 'Hospital admission (Apollo Hospital)', type: 'admission', provenance: 'ai', source: D.apolloDischarge },
-  ],
 };

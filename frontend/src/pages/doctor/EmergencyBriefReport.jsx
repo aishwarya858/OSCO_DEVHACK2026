@@ -1,13 +1,8 @@
 import {
-  Activity,
-  BedDouble,
   CalendarX2,
-  ClipboardList,
   FlaskConical,
-  HeartPulse,
   Pill,
   ShieldAlert,
-  Stethoscope,
   TriangleAlert,
 } from 'lucide-react';
 import { BRIEF } from '../../data/emergencyBrief.mock';
@@ -19,7 +14,6 @@ import { MedRibbon, RibbonAxis } from '../../components/brief/MedRibbon';
 import { DotMatrix } from '../../components/brief/DotMatrix';
 import { DoctorPageShell, EmptyNote, Pill as Tag } from '../../components/brief/DoctorPageShell';
 
-const EVENT_ICONS = { visit: Stethoscope, imaging: HeartPulse, diagnosis: ClipboardList, admission: BedDouble };
 
 function SubHeading({ children }) {
   return <p className="mb-2 mt-4 font-inter text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-muted first:mt-0">{children}</p>;
@@ -34,7 +28,7 @@ function SubHeading({ children }) {
  * @param {{ data?: typeof BRIEF, onOpenTimeline?: () => void, onOpenSource?: (source) => void, onReview?: (conflict) => void }} props
  */
 export function EmergencyBriefReport({ data = BRIEF, onOpenTimeline, onOpenSource, onReview }) {
-  const { patient, medications, allergies, investigations, missing, conflicts, events } = data;
+  const { patient, medications, allergies, investigations, missing, conflicts } = data;
   const docs = data.documentCount;
   const inDocs = `in the ${docs} document${docs === 1 ? '' : 's'} reviewed`;
   const noStopRecorded = medications.filter((m) => !m.stopped).length;
@@ -275,46 +269,6 @@ export function EmergencyBriefReport({ data = BRIEF, onOpenTimeline, onOpenSourc
                 </li>
               ))}
             </ul>
-          )}
-        </BriefCard>
-
-        {/* 6. Major Medical Events: full width, row 4, Sage */}
-        <BriefCard
-          title="Major Medical Events"
-          icon={Activity}
-          tone="sage"
-          className="lg:col-span-12 lg:row-start-4"
-          meta={<span className="rounded-full bg-white/50 px-2 py-0.5 font-jetbrains text-[10.5px]">{events.length} events</span>}
-        >
-          {events.length === 0 ? (
-            <EmptyNote>No diagnosis, admission or other major event is documented {inDocs}.</EmptyNote>
-          ) : (
-            <>
-              <p className="mb-3 text-[11px] text-aubergine/70">Newest on the left. Scroll for older events.</p>
-              <div className="-mx-1 overflow-x-auto pb-2">
-                <ol className="relative flex min-w-max gap-0 px-1">
-                  {/* the timeline line, behind the nodes */}
-                  <span className="absolute left-1 right-1 top-[26px] h-px bg-aubergine/25" aria-hidden="true" />
-                  {events.map((event) => {
-                    const Icon = EVENT_ICONS[event.type] ?? ClipboardList;
-                    return (
-                      <li key={event.id} className="relative w-56 shrink-0 pr-4">
-                        <time className="block font-jetbrains text-[11px] text-aubergine/75">{event.date}</time>
-                        <span className="relative z-10 mt-2 block h-3 w-3 rounded-full border-2 border-aubergine bg-sage" aria-hidden="true" />
-                        <p className="mt-3 flex items-start gap-1.5 text-sm font-semibold leading-snug">
-                          <Icon size={14} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
-                          {event.title}
-                        </p>
-                        <div className="mt-2 flex flex-col items-start gap-1.5">
-                          <ProvenanceTag kind={event.provenance} />
-                          <SourceChip source={event.source} onOpen={onOpenSource} />
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            </>
           )}
         </BriefCard>
       </div>

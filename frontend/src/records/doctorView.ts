@@ -199,20 +199,6 @@ export const toBriefData = (records: PatientRecords) => {
       }),
   }));
 
-  // Major Medical Events: diagnoses, admissions and doctor visits, newest first.
-  const eventItems = [
-    ...findings
-      .filter((f) => (f.category === 'condition' || f.category === 'event') && f.assertion !== 'absent')
-      .map((f) => {
-        const date = findingDate(f, documentOf(records, f)).date;
-        const title = f.assertion === 'possible' ? `${f.name} (possible, unconfirmed)` : f.assertion === 'historical' ? `${f.name} (past history)` : f.name;
-        return { id: f.id, sortDate: date ?? '', date: date ? formatRecordDate(date) : 'Date unclear', title, type: /admi/i.test(f.name) ? 'admission' : f.category === 'condition' ? 'diagnosis' : 'visit', provenance: provenanceKind(f), source: sourceOf(records, f) };
-      }),
-    ...docs
-      .filter((d) => d.kind === 'clinical_record')
-      .map((d) => ({ id: d.id, sortDate: d.documentDate ?? '', date: documentDateLabel(d), title: `Doctor visit${d.clinicalRecord?.facility ? ` (${d.clinicalRecord.facility})` : ''}`, type: 'visit', provenance: 'doctor-entered' as const, source: { id: d.id, name: d.name, date: documentDateLabel(d), findingId: null } })),
-  ].sort((a, b) => b.sortDate.localeCompare(a.sortDate));
-
   return {
     patient: { publicId: records.patientId, name: records.patientName, age: null, sex: null },
     updated: formatRecordDate(records.builtAt),
@@ -224,6 +210,5 @@ export const toBriefData = (records: PatientRecords) => {
     investigations,
     missing: { years, documentMonths: [...docMonths.entries()].map(([iso, verified]) => ({ iso, verified })), coveredUntil: builtMonth, gapRanges, lines: gapLines },
     conflicts,
-    events: eventItems,
   };
 };
